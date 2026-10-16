@@ -1,179 +1,132 @@
+
 import 'package:flutter/material.dart';
+
+import 'models/product.dart';
+import 'screens/feed_screen.dart';
+import 'screens/favorites_screen.dart';
+import 'screens/profile_screen.dart';
+import 'screens/detail_screen.dart';
+
 void main() {
   runApp(const MyApp());
 }
+
+const Color primaryColor = Color(0xFFB76E79);
+const Color backgroundColor = Color(0xFFFFF9F8);
+
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
+
   @override
   Widget build(BuildContext context) {
-    return const MaterialApp(
+    return MaterialApp(
       debugShowCheckedModeBanner: false,
-      home: ProductScreen(),
+      title: 'My Cosmetics',
+      theme: ThemeData(
+        useMaterial3: true,
+        scaffoldBackgroundColor: backgroundColor,
+        colorScheme: ColorScheme.fromSeed(
+          seedColor: primaryColor,
+        ),
+        appBarTheme: const AppBarTheme(
+          backgroundColor: backgroundColor,
+          foregroundColor: Color(0xFF30252A),
+          centerTitle: true,
+        ),
+      ),
+      home: const HomeScreen(),
     );
   }
 }
-class ProductScreen extends StatefulWidget {
-  const ProductScreen({super.key});
+
+class HomeScreen extends StatefulWidget {
+  const HomeScreen({super.key});
+
   @override
-  State<ProductScreen> createState() => _ProductScreenState();
+  State<HomeScreen> createState() => _HomeScreenState();
 }
-class _ProductScreenState extends State<ProductScreen> {
-  bool isFavorite = false;
-  int cartCount = 0;
+
+class _HomeScreenState extends State<HomeScreen> {
+  int currentIndex = 0;
+
+  final Set<String> favoriteIds = {};
+
+  void toggleFavorite(Product product) {
+    setState(() {
+      if (favoriteIds.contains(product.id)) {
+        favoriteIds.remove(product.id);
+      } else {
+        favoriteIds.add(product.id);
+      }
+    });
+  }
+
+  void openDetails(Product product) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (context) => DetailScreen(
+          product: product,
+          isFavorite: favoriteIds.contains(product.id),
+          onFavoritePressed: () => toggleFavorite(product),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final screens = [
+      FeedScreen(
+        products: products,
+        favoriteIds: favoriteIds,
+        onProductTap: openDetails,
+        onFavoriteTap: toggleFavorite,
+      ),
+      FavoritesScreen(
+        products: products
+            .where((product) => favoriteIds.contains(product.id))
+            .toList(),
+        favoriteIds: favoriteIds,
+        onProductTap: openDetails,
+        onFavoriteTap: toggleFavorite,
+      ),
+      const ProfileScreen(),
+    ];
+
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        title: const Text('My Cosmetics'),
-        centerTitle: true,
-        backgroundColor: Colors.pink.shade50,
+      body: IndexedStack(
+        index: currentIndex,
+        children: screens,
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Stack(
-              children: [
-                Container(
-                  width: double.infinity,
-                  height: 250,
-                  decoration: BoxDecoration(
-                    color: Colors.pink.shade50,
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: Center(
-                    child:
-                    Image.network(
-                      'https://cdn-01.goldapple.ru/p/p/3750100039/web/696d674d61696e5064708ddc3e15ddf877f.jpg',
-                      width: double.infinity,
-                      height: 250,
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Icon(
-                          Icons.image_not_supported,
-                          size: 60,
-                        );
-                      },
-                    ),
-                  ),
-                ),
-                Positioned(
-                  top: 10,
-                  right: 10,
-                  child: IconButton(
-                    onPressed: () {
-                      setState(() {
-                        isFavorite = !isFavorite;
-                      });
-                    },
-                    icon: Icon(
-                      isFavorite
-                          ? Icons.bookmark
-                          : Icons.bookmark_border,
-                      color: Colors.pink,
-                      size: 30,
-                    ),
-                  ),
-                ),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            const Text(
-              'CHICAGO Mascara',
-              style: TextStyle(
-                fontSize: 24,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-
-            const SizedBox(height: 10),
-            Row(
-              children: [
-                const Icon(Icons.star, color: Colors.amber),
-                const SizedBox(width: 5),
-                const Text('4.9'),
-                const SizedBox(width: 15),
-                const Expanded(
-                  child: Text(
-                    '(120 reviews)',
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                const Text(
-                  '4 500 ₸',
-                  style: TextStyle(
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 15),
-            const Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                Chip(label: Text('Mascara')),
-                Chip(label: Text('CHICAGO')),
-                Chip(label: Text('Eye Makeup')),
-              ],
-            ),
-            const SizedBox(height: 15),
-            const Text(
-              'Product details',
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'CHICAGO mascara helps create expressive lashes '
-                  'and completes your everyday makeup look.',
-              style: TextStyle(fontSize: 16),
-            ),
-            const SizedBox(height: 20),
-            Text('Items in cart: $cartCount'),
-          ],
-        ),
-      ),
-      bottomNavigationBar: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              Expanded(
-                child: SizedBox(
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: () {
-                      setState(() {
-                        cartCount++;
-                      });
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(
-                          content: Text('Added to cart'),
-                        ),
-                      );
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: Colors.pink,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: const Text(
-                      'Add to Cart',
-                      style: TextStyle(fontSize: 18),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+      bottomNavigationBar: BottomNavigationBar(
+        currentIndex: currentIndex,
+        onTap: (index) {
+          setState(() {
+            currentIndex = index;
+          });
+        },
+        selectedItemColor: primaryColor,
+        unselectedItemColor: Colors.grey,
+        backgroundColor: Colors.white,
+        type: BottomNavigationBarType.fixed,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.storefront_outlined),
+            activeIcon: Icon(Icons.storefront),
+            label: 'Feed',
           ),
-        ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.favorite_border),
+            activeIcon: Icon(Icons.favorite),
+            label: 'Favorites',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person_outline),
+            activeIcon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
       ),
     );
   }
